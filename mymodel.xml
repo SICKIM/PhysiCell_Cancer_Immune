@@ -292,6 +292,10 @@
 				
 				<max_attachment_distance units="micron">18.0</max_attachment_distance>
 				<min_attachment_distance units="micron">14.0</min_attachment_distance>
+
+				<!--PDL1 for cancer cells-->
+				<PDL1 units="dimensionless">1</PDL1>
+				
 			</custom_data>
 		</cell_definition>
 
