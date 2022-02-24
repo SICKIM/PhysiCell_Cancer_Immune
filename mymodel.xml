@@ -173,7 +173,9 @@
 				
 				<death>  
 					<model code="100" name="apoptosis"> 
-						<death_rate units="1/min">0</death_rate>
+						
+						<!-- death rate was previously 0, made it 5.31667e-05 on 2/23/2022 -->
+						<death_rate units="1/min">5.31667e-05</death_rate>
 						<!-- use phase_transition_rates OR phase_durations -->
 						<!--
 						<phase_transition_rates units="1/min">
@@ -295,6 +297,19 @@
 
 				<!--PDL1 for cancer cells-->
 				<PDL1 units="dimensionless">1</PDL1>
+
+				<!--Mutational burden and antigen strength of cancer cells-->
+				<!--For mutational burden (aka ka in Gong et al) 20 is high and 10 is low-->
+				<mutational_burden units="dimensionless">15</mutational_burden>
+
+				<!--Neoantigen strength-->
+				<!--Ranges from 0.001 low to 0.1 high, we set at 0.01-->
+				<neoantigen_strength units="dimensionless">0.01</neoantigen_strength>
+
+				<!--Initial rate (r1), set to 6 from Cess, Gong et al-->
+				<r1 units="dimensionless">6</r1>
+
+				
 				
 			</custom_data>
 		</cell_definition>

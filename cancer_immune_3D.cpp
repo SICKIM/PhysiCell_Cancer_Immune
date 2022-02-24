@@ -67,11 +67,18 @@
 
 #include "./cancer_immune_3D.h"
 
-Cell_Definition* pImmuneCell; 
+Cell_Definition* pImmuneCell;
+
+// 2/21/2022 Set up the PhysiCell mechanics data structure.
+    // Set mechanics voxel size.
+double mechanics_voxel_size = 30;
+Cell_Container* cell_container = create_cell_container_for_microenvironment(
+    microenvironment, mechanics_voxel_size );
+
 
 void create_immune_cell_type( void )
 {
-	pImmuneCell = find_cell_definition( "immune cell" ); 
+    pImmuneCell = find_cell_definition( "immune cell" );
 	
 	static int oxygen_ID = microenvironment.find_density_index( "oxygen" ); 
 	static int immuno_ID = microenvironment.find_density_index( "immunostimulatory factor" ); 
@@ -173,6 +180,7 @@ void setup_microenvironment( void )
 
 	return; 
 }	
+
 
 void introduce_immune_cells( void )
 {
@@ -736,19 +744,94 @@ void tumor_cell_becomes_PDL1 (Cell* pCell, Phenotype& phenotype, double dt)
 // did not enter loop
 std::vector<std::string> cancer_cell_PDL1_coloring_function( Cell* pCell)
 {
-    std::cout << "Hello!";
-    int counter = 0;
     std::vector< std::string > output = paint_by_number_cell_coloring(pCell);
     if (pCell->phenotype.death.dead==false) //((pCell->state.number_of_attached_cells() > 0) && (pCell->phenotype.death.dead == false)) // && (UniformRandom>0.2) // check
         // ADD in random number later
     {
-        counter++;
         output[0]="pink";
         output[1]="pink";
         output[2]="pink";
         output[3]="pink";
         return output;
     }
-    std::cout << counter;
     return output;
 }
+
+int sum_dead_cells_over_time_window ()
+{
+    static int dead_cell_counter = 0;
+    Cell* pCell = NULL;
+    // loop over all cells
+    for ( int i=0; i < (*all_cells).size(); i++ )
+    {
+        pCell = (*all_cells)[i];
+        // if cell is dead increase counter
+        if (pCell->phenotype.death.dead == true)
+        {
+        dead_cell_counter++;
+        }
+    }
+    // currently only takes the number of dead in current step, not summed over time window
+    // FIX
+    //static int num_deaths_current_step = Cell_container->num_deaths_in_current_step;
+    return dead_cell_counter;
+    
+}
+
+// recruit number of T cells based on function provided by Gong et al Cess et al models
+void recruit_T_cells ()
+{
+    Cell_Definition* pCell = find_cell_definition( "cancer cell" );
+
+    // retrieve ka (mutational burden) and ki (neoantigen strength)
+    static int ka = pCell->custom_data["mutational_burden"];
+    static int ki = pCell->custom_data["neoantigen_strength"];
+    static int r1 = pCell->custom_data["r1"];
+    
+    // calculate rate of tumor recruitment
+    static int T_cell_recruit_rate = ka*sum_dead_cells_over_time_window()*r1/((1/ki)+sum_dead_cells_over_time_window());
+
+    double tumor_radius = -9e9; // 250.0;
+    double temp_radius = 0.0;
+    
+    // for the loop, deal with the (faster) norm squared
+    for( int i=0; i < (*all_cells).size() ; i++ )
+    {
+        temp_radius = norm_squared( (*all_cells)[i]->position );
+        if( temp_radius > tumor_radius )
+        { tumor_radius = temp_radius; }
+    }
+    // now square root to get to radius
+    tumor_radius = sqrt( tumor_radius );
+    
+    // if this goes wackadoodle, choose 250
+    if( tumor_radius < 250.0 )
+    { tumor_radius = 250.0; }
+    
+    std::cout << "current tumor radius: " << tumor_radius << std::endl;
+    
+    // now seed immune cells, rate (Gong et al) times diffusion time
+    int number_of_immune_cells =
+    T_cell_recruit_rate*mechanics_dt; //* mechanics_dt * 100000; // parameters.ints("number_of_immune_cells"); // 7500; // 100; // 40;
+    
+    double radius_inner = tumor_radius +
+    parameters.doubles("initial_min_immune_distance_from_tumor"); 30.0; // 75 // 50;
+    double radius_outer = radius_inner +
+        parameters.doubles("thickness_of_immune_seeding_region"); // 75.0; // 100; // 1000 - 50.0;
+    
+    double mean_radius = 0.5*(radius_inner + radius_outer);
+    double std_radius = 0.33*( radius_outer-radius_inner)/2.0;
+    
+    for( int i=0 ;i < number_of_immune_cells ; i++ )
+    {
+        double theta = UniformRandom() * 6.283185307179586476925286766559;
+        double phi = acos( 2.0*UniformRandom() - 1.0 );
+        
+        double radius = NormalRandom( mean_radius, std_radius );
+        
+        Cell* pCell = create_cell( *pImmuneCell );
+        pCell->assign_position( radius*cos(theta)*sin(phi), radius*sin(theta)*sin(phi), radius*cos(phi) );
+    }
+    return;
+}
+

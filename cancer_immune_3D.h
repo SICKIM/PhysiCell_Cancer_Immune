@@ -122,3 +122,9 @@ void immune_cell_motility( Cell* pCell, Phenotype& phenotype, double dt );
 // void tumor_cell_becomes_PDL1 (Cell* pCell, Phenotype& phenotype, double dt);
 // custom to change color when PDL1 to make sure the function works
 std::vector<std::string> cancer_cell_PDL1_coloring_function( Cell* pCell);
+
+// sum number of dead cells over time window, or Nc,death from Gong et al Cess et al models
+int sum_dead_cells_over_time_window ();
+
+// recruit number of T cells based on function provided by Gong et al Cess et al models
+void recruit_T_cells ();
