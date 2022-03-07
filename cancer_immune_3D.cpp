@@ -112,7 +112,7 @@ void create_immune_cell_type( void )
 	pImmuneCell->functions.contact_function = adhesion_contact_function; 
 	
 	// set custom data values 
-	
+
 	return; 
 }
 
@@ -181,7 +181,7 @@ void setup_microenvironment( void )
 	return; 
 }	
 
-
+/*
 void introduce_immune_cells( void )
 {
 	double tumor_radius = -9e9; // 250.0; 
@@ -228,7 +228,7 @@ void introduce_immune_cells( void )
 	
 	return; 
 }
-
+*/
 
 std::vector<std::vector<double>> create_cell_sphere_positions(double cell_radius, double sphere_radius)
 {
@@ -263,6 +263,60 @@ std::vector<std::vector<double>> create_cell_sphere_positions(double cell_radius
 
 void setup_tissue( void )
 {
+    // this doesn't really work, keep it in just in case
+    /*
+    // setup tissue by placing a few tumor cells that divide rapidly (rather than cluster of tumor cells at center)
+    
+    double Xmin = microenvironment.mesh.bounding_box[0];
+    double Ymin = microenvironment.mesh.bounding_box[1];
+    double Zmin = microenvironment.mesh.bounding_box[2];
+
+    double Xmax = microenvironment.mesh.bounding_box[3];
+    double Ymax = microenvironment.mesh.bounding_box[4];
+    double Zmax = microenvironment.mesh.bounding_box[5];
+    
+    /*
+    if( default_microenvironment_options.simulate_2D == true )
+    {
+        Zmin = 0.0;
+        Zmax = 0.0;
+    }
+    
+    
+    double Xrange = Xmax - Xmin;
+    double Yrange = Ymax - Ymin;
+    double Zrange = Zmax - Zmin;
+    
+    // define cancer cell and mean immunogenicity and standard deviation
+    
+    Cell_Definition* pCell = find_cell_definition( "cancer cell" );
+    static double imm_mean = parameters.doubles("tumor_mean_immunogenicity");
+    static double imm_sd = parameters.doubles("tumor_immunogenicity_standard_deviation");
+    
+    // create random tumor cells
+    std::cout << "Placing cells of type " << pCell->name << " ... " << std::endl;
+    for( int n = 0 ; n < parameters.ints("number_of_cells") ; n++ )
+    {
+        std::vector<double> position = {0,0,0};
+        position[0] = Xmin + UniformRandom()*Xrange;
+        position[1] = Ymin + UniformRandom()*Yrange;
+        position[2] = Zmin + UniformRandom()*Zrange;
+            
+        Cell* pC = create_cell( *pCell );
+        pC->assign_position( position );
+        
+        pCell->custom_data["oncoprotein"] = NormalRandom( imm_mean, imm_sd );
+        if( pCell->custom_data["oncoprotein"] < 0.0 )
+        { pCell->custom_data["oncoprotein"] = 0.0; }
+    }
+    
+    std::cout << std::endl;
+    
+    // load cells from your CSV file (if enabled)
+    load_cells_from_pugixml();
+    return;
+    */
+
 	// place a cluster of tumor cells at the center 
 	
 	double cell_radius = cell_defaults.phenotype.geometry.radius; 
@@ -315,7 +369,10 @@ void setup_tissue( void )
 	std::cout << "standard deviation: " << standard_deviation << std::endl; 
 	std::cout << "[min max]: [" << min << " " << max << "]" << std::endl << std::endl; 
 	
-	return; 
+	return;
+     
+    
+    
 }
 
 // custom cell phenotype function to scale immunostimulatory factor with hypoxia 
@@ -374,6 +431,7 @@ std::vector<std::string> cancer_immune_coloring_function( Cell* pCell )
 
         // CUSTOM
         // if under attack but still alive, let's turn hot pink
+        // this is to turn PDL1+
         if (pCell->phenotype.death.dead == false)
         {
             output[0]="hotpink";
@@ -642,8 +700,8 @@ bool immune_cell_trigger_apoptosis( Cell* pAttacker, Cell* pTarget )
 
 void immune_cell_rule( Cell* pCell, Phenotype& phenotype, double dt )
 {
-	static int attach_lifetime_i = pCell->custom_data.find_variable_index( "attachment_lifetime" ); 
-	
+	static int attach_lifetime_i = pCell->custom_data.find_variable_index( "attachment_lifetime" );
+    
 	if( phenotype.death.dead == true )
 	{
 		// the cell death functions don't automatically turn off custom functions, 
@@ -693,7 +751,7 @@ void immune_cell_rule( Cell* pCell, Phenotype& phenotype, double dt )
 	}
 	phenotype.motility.is_motile = true; 
 	
-	return; 
+	return;
 }
 
 void adhesion_contact_function( Cell* pActingOn, Phenotype& pao, Cell* pAttachedTo, Phenotype& pat , double dt )
@@ -741,13 +799,13 @@ void tumor_cell_becomes_PDL1 (Cell* pCell, Phenotype& phenotype, double dt)
 
 // advice: first thing: check for neighbors. scan through all neighbors, and if there's a T cell then with some probability the T cell becomes activated and once in contact with an activated T cell, that's one switches to PDL1- or PDL1+.
 // starting w/ PDL1- cell, if cell is immune-cell-attached,
-// did not enter loop
 std::vector<std::string> cancer_cell_PDL1_coloring_function( Cell* pCell)
 {
     std::vector< std::string > output = paint_by_number_cell_coloring(pCell);
     if (pCell->phenotype.death.dead==false) //((pCell->state.number_of_attached_cells() > 0) && (pCell->phenotype.death.dead == false)) // && (UniformRandom>0.2) // check
         // ADD in random number later
     {
+        // convert cells that have survived immune attack to pink
         output[0]="pink";
         output[1]="pink";
         output[2]="pink";
@@ -784,18 +842,18 @@ void recruit_T_cells ()
     Cell_Definition* pCell = find_cell_definition( "cancer cell" );
 
     // retrieve ka (mutational burden) and ki (neoantigen strength)
-    static int ka = pCell->custom_data["mutational_burden"];
-    static int ki = pCell->custom_data["neoantigen_strength"];
-    static int r1 = pCell->custom_data["r1"];
+    static double ka = pCell->custom_data["mutational_burden"];
+    static double ki = pCell->custom_data["neoantigen_strength"];
+    static double r1 = pCell->custom_data["r1"];
     
     // calculate rate of tumor recruitment
-    static int T_cell_recruit_rate = ka*sum_dead_cells_over_time_window()*r1/((1/ki)+sum_dead_cells_over_time_window());
+    double T_cell_recruit_rate = ka*(double)sum_dead_cells_over_time_window()*r1/((1/ki)+(double)sum_dead_cells_over_time_window());
 
     double tumor_radius = -9e9; // 250.0;
     double temp_radius = 0.0;
     
-    // for the loop, deal with the (faster) norm squared
-    for( int i=0; i < (*all_cells).size() ; i++ )
+    // for the loop, deal with the (faster) norm squared and ONLY tumor cells
+    for( int i=0; i < (*all_cells).size() && (*all_cells)[i]->type == 0; i++ )
     {
         temp_radius = norm_squared( (*all_cells)[i]->position );
         if( temp_radius > tumor_radius )
@@ -812,7 +870,10 @@ void recruit_T_cells ()
     
     // now seed immune cells, rate (Gong et al) times diffusion time
     int number_of_immune_cells =
-    T_cell_recruit_rate*mechanics_dt; //* mechanics_dt * 100000; // parameters.ints("number_of_immune_cells"); // 7500; // 100; // 40;
+    T_cell_recruit_rate*mechanics_dt;
+    
+    // count number of immune cells
+    std::cout << "current num T cells " << number_of_immune_cells << std::endl;
     
     double radius_inner = tumor_radius +
     parameters.doubles("initial_min_immune_distance_from_tumor"); 30.0; // 75 // 50;
