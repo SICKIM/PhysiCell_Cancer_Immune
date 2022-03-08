@@ -89,7 +89,7 @@
 	<!-- [-750,750]^3 --> 
 	
 	<overall>
-		<max_time units="min">400</max_time> <!-- 21 days * 24 h * 60 min -->
+		<max_time units="min">4000</max_time> <!-- 4000 min -->
 		<time_units>min</time_units>
 		<space_units>micron</space_units>
 	
@@ -161,38 +161,21 @@
 	<cell_definitions>
 		<cell_definition name="cancer cell" ID="0">
 			<phenotype>
-
-
-				<cycle code="6" name="Flow cytometry model (separated)">  
-					<!-- phases are: G0/G1 , S, G2, M --> 
-					<!-- using higher than normal significant digits to match divisions in default code -->
-					<!-- use phase_transition_rates OR phase_durations -->
-					<!--
+				<cycle code="5" name="live">  					
 					<phase_transition_rates units="1/min">
-					<!-- divide/scale everything by 1000 to speed things up --!
- 
-						<rate start_index="0" end_index="1" fixed_duration="false">33.4672</rate>
-						<rate start_index="1" end_index="2" fixed_duration="true">20.8333</rate>
-						<rate start_index="2" end_index="3" fixed_duration="true">41.6667</rate>
-						<rate start_index="3" end_index="0" fixed_duration="true">166.667</rate>
-					</phase_transition_rates>
-					-->
+						
+<!-- changed fixed duration, which is birth rate b, from 0.0072 to 0.0288 on 3/7/22-->
 
-					<!-- use phase_transition_rates OR phase_durations -->
-					<phase_durations units="min"> 
-						<duration index="0" fixed_duration="false">0.0300</duration>
-						<duration index="1" fixed_duration="true">0.0480</duration>
-						<duration index="2" fixed_duration="true">0.0240</duration>
-						<duration index="3" fixed_duration="true">0.0060</duration>
-					</phase_durations>
+						<rate start_index="0" end_index="0" fixed_duration="false">0.0288</rate>
+					</phase_transition_rates>				
 				</cycle>
 
 				
 				<death>  
 					<model code="100" name="apoptosis"> 
 						
-						<!-- death rate was previously 0, made it 5.31667e-06 on 2/27 -->
-						<death_rate units="1/min">5.31667e-06</death_rate>
+						<!-- death rate 0 from 5.31667e-06-->
+						<death_rate units="1/min">0</death_rate>
 						<!-- use phase_transition_rates OR phase_durations -->
 						<!--
 						<phase_transition_rates units="1/min">
@@ -313,7 +296,8 @@
 				<min_attachment_distance units="micron">14.0</min_attachment_distance>
 
 				<!--PDL1 for cancer cells-->
-				<PDL1 units="dimensionless">1</PDL1>
+				<!--1 means PDL1-, 0 means PDL1+...I know, it's just to get the code working-->
+				<PDL1 type="int" units="dimensionless">1</PDL1>
 
 				<!--Mutational burden and antigen strength of cancer cells-->
 				<!--For mutational burden (aka ka in Gong et al) 20 is high and 10 is low-->
@@ -326,6 +310,14 @@
 				<!--Initial rate (r1), set to 6 from Cess, Gong et al-->
 				<r1 units="dimensionless">6</r1>
 
+				<!-- Custom for oxygen dependence (from PhysiCell All Slides, pg 297 onwards-->
+				<pO2_proliferation_saturation units="mmHg">38</pO2_proliferation_saturation>
+				<pO2_proliferation_threshold units="mmHg">5</pO2_proliferation_threshold>
+				<pO2_necrosis_threshold units="mmHg">5</pO2_necrosis_threshold>
+				<pO2_necrosis_saturation units="mmHg">2.5</pO2_necrosis_saturation>
+				<max_necrosis_rate units="1/min">0.0028</max_necrosis_rate>
+				<pO2_half_max units="mmHg">8</pO2_half_max>
+
 				
 				
 			</custom_data>
@@ -334,7 +326,7 @@
 		<cell_definition name="immune cell" ID="1" parent_type="cancer cell">
 			<phenotype>
 				<cycle code="5" name="live">  
-					<phase_transition_rates units="1/min"> 
+					<phase_transition_rates units="1/min">
 						<rate start_index="0" end_index="0" fixed_duration="false">0.0</rate>
 					</phase_transition_rates>
 				</cycle>

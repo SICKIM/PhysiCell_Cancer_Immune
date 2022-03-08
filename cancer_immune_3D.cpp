@@ -128,9 +128,14 @@ void create_cell_types( void )
 	
 	initialize_default_cell_definition();
 	
-	
+	// messing around w/ o2 saturation and threshold levels to get the desired hypoxic core
 	cell_defaults.parameters.o2_proliferation_saturation = 38.0;  
-	cell_defaults.parameters.o2_reference = 38.0; 
+	cell_defaults.parameters.o2_proliferation_threshold = 1.0;
+    cell_defaults.parameters.o2_reference = 38.0;
+    // setting necrosis threshold and saturation
+    cell_defaults.parameters.o2_necrosis_max = 30;
+    cell_defaults.parameters.o2_necrosis_threshold = 30;
+
 
 	static int oxygen_ID = microenvironment.find_density_index( "oxygen" ); // 0 
 	static int immuno_ID = microenvironment.find_density_index( "immunostimulatory factor" ); // 1
@@ -400,6 +405,13 @@ void tumor_cell_phenotype_with_and_immune_stimulation( Cell* pCell, Phenotype& p
 		pCell->functions.update_phenotype = NULL; 		
 		return; 
 	}
+    
+    // if cell is attached to immune cell but doesn't die, become PDL1+ which (in another function) will turn future death rate to 0
+    if( pCell->state.attached_cells.size() > 0 && pCell->phenotype.death.dead == false)
+    {
+        pCell -> custom_data["PDL1"] = 0; // 0 corresponds to PDL1+, 1 to PDL1-
+    }
+
 
 	// multiply proliferation rate by the oncoprotein 
 	phenotype.cycle.data.transition_rate( cycle_start_index ,cycle_end_index ) *= pCell->custom_data[oncoprotein_i] ; 
@@ -428,16 +440,16 @@ std::vector<std::string> cancer_immune_coloring_function( Cell* pCell )
 		output[0] = "darkcyan"; // orangered // "purple"; // 128,0,128
 		output[1] = "black"; // "magenta"; 
 		output[2] = "cyan"; // "magenta"; //255,0,255
-
-        // CUSTOM
-        // if under attack but still alive, let's turn hot pink
-        // this is to turn PDL1+
-        if (pCell->phenotype.death.dead == false)
-        {
-            output[0]="hotpink";
-            output[1]="hotpink";
-            output[2]="hotpink";
-        }
+        return output;
+    }
+    
+    // CUSTOM
+    // if cell is attacked but survives, turn pink and STAY PINK
+    if( (pCell->state.attached_cells.size() > 0 && pCell->phenotype.death.dead == false) || (pCell->custom_data["PDL1"] == 0) )
+    {
+        output[0]="hotpink";
+        output[1]="hotpink";
+        output[2]="hotpink";
         return output;
 	}
 	
@@ -678,7 +690,8 @@ bool immune_cell_attempt_apoptosis( Cell* pAttacker, Cell* pTarget, double dt )
 	if( scale > 1.0 )
 	{ scale = 1.0; } 
 	
-	if( UniformRandom() < pAttacker->custom_data[kill_rate_index] * scale * dt )
+    // if numerical conditions are met and tumor cell is not PDL1+
+	if( (UniformRandom() < pAttacker->custom_data[kill_rate_index] * scale * dt) && (pTarget->custom_data["PDL1"] == 1)) // PDL1 value is either 0 if survived, or 1. So T cell can attach to PDL1+ cells but won't be able to kill them.
 	{ 
 //		std::cout << "\t\t kill!" << " " << pTarget->custom_data[oncoprotein_i] << std::endl; 
 		return true; 
@@ -799,6 +812,7 @@ void tumor_cell_becomes_PDL1 (Cell* pCell, Phenotype& phenotype, double dt)
 
 // advice: first thing: check for neighbors. scan through all neighbors, and if there's a T cell then with some probability the T cell becomes activated and once in contact with an activated T cell, that's one switches to PDL1- or PDL1+.
 // starting w/ PDL1- cell, if cell is immune-cell-attached,
+/*
 std::vector<std::string> cancer_cell_PDL1_coloring_function( Cell* pCell)
 {
     std::vector< std::string > output = paint_by_number_cell_coloring(pCell);
@@ -814,7 +828,7 @@ std::vector<std::string> cancer_cell_PDL1_coloring_function( Cell* pCell)
     }
     return output;
 }
-
+*/
 int sum_dead_cells_over_time_window ()
 {
     static int dead_cell_counter = 0;
