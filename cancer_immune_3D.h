@@ -78,6 +78,7 @@ extern Cell_Definition* pImmuneCell;
 
 void create_immune_cell_type( void ); 
 
+
 // set the tumor cell properties, then call the function 
 // to set up the tumor cells 
 void create_cell_types( void );
@@ -128,3 +129,14 @@ int sum_dead_cells_over_time_window ();
 
 // recruit number of T cells based on function provided by Gong et al Cess et al models
 void recruit_T_cells ();
+
+
+// macrophage functions
+// create macrophages
+void create_macrophage_type ( void );
+// macrophage rules
+void macrophage_rule( Cell* pCell, Phenotype& phenotype, double dt );
+void macrophage_motility( Cell* pCell, Phenotype& phenotype, double dt );
+
+
+

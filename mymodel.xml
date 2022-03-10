@@ -78,8 +78,8 @@
 		<x_max>750</x_max>
 		<y_min>-750</y_min>
 		<y_max>750</y_max>
-		<z_min>-20</z_min>
-		<z_max>20</z_max>
+		<z_min>-10</z_min>
+		<z_max>10</z_max>
 		<dx>20</dx>
 		<dy>20</dy>
 		<dz>20</dz>
@@ -142,7 +142,27 @@
 			</physical_parameter_set>
 			<initial_condition units="dimensionless">0</initial_condition>
 			<Dirichlet_boundary_condition units="dimensionless" enabled="false">0</Dirichlet_boundary_condition>
+		</variable>	
+
+		<!-- currently, IL4 has same properties as immunostimulatory factor -->
+		<variable name="IL4" units="dimensionless" ID="2">
+			<physical_parameter_set>
+				<diffusion_coefficient units="micron^2/min">1000</diffusion_coefficient>
+				<decay_rate units="1/min">0.016</decay_rate>  
+			</physical_parameter_set>
+			<initial_condition units="dimensionless">0</initial_condition>
+			<Dirichlet_boundary_condition units="dimensionless" enabled="false">0</Dirichlet_boundary_condition>
 		</variable>		
+
+		<!-- currently, IFNg has same properties as immunostimulatory factor -->
+		<variable name="IFNg" units="dimensionless" ID="3">
+			<physical_parameter_set>
+				<diffusion_coefficient units="micron^2/min">1000</diffusion_coefficient>
+				<decay_rate units="1/min">0.016</decay_rate>  
+			</physical_parameter_set>
+			<initial_condition units="dimensionless">0</initial_condition>
+			<Dirichlet_boundary_condition units="dimensionless" enabled="false">0</Dirichlet_boundary_condition>
+		</variable>	
 	
 		<options>
 			<calculate_gradients>true</calculate_gradients>
@@ -279,6 +299,14 @@
 						<uptake_rate units="1/min">0</uptake_rate>
 						<net_export_rate units="total substrate/min">0</net_export_rate> 
 					</substrate> 
+
+					<substrate name="IL4">
+						<secretion_rate units="1/min">0</secretion_rate>
+						<secretion_target units="substrate density">1</secretion_target>
+						<uptake_rate units="1/min">0</uptake_rate>
+						<net_export_rate units="total substrate/min">0</net_export_rate> 
+					</substrate> 
+
 				</secretion>
 
 				<molecular />
@@ -352,10 +380,48 @@
 				<oncoprotein units="dimensionless">0</oncoprotein>
 			</custom_data>
 		</cell_definition> 
+
+
+		<cell_definition name="macrophage" ID="2" parent_type="immune cell">
+			<phenotype>
+				<cycle code="5" name="live">  
+					<phase_transition_rates units="1/min">
+						<rate start_index="0" end_index="0" fixed_duration="false">0.0</rate>
+					</phase_transition_rates>
+				</cycle>
+				
+				<motility>  
+					<speed units="micron/min">10</speed>
+					<persistence_time units="min">10</persistence_time>
+					<migration_bias units="dimensionless">0.5</migration_bias>
+					
+					<options>
+						<enabled>true</enabled>
+						<use_2D>false</use_2D>
+						<chemotaxis>
+							<enabled>false</enabled>
+							<substrate>IL4</substrate>
+							<direction>1</direction>
+						</chemotaxis>
+					</options>
+				</motility>				
+				
+			</phenotype> 
+			<custom_data>
+				<oncoprotein units="dimensionless">0</oncoprotein>
+			</custom_data>
+		</cell_definition> 
+
+
+
+
+
 	</cell_definitions>
 	
 	<user_parameters>
 		<number_of_cells type="int" units="none" description="initial number of cells (for each cell type)">10</number_of_cells>
+
+		<number_of_initial_macrophages type="int" units="none" description="initial number of macrophages">500</number_of_initial_macrophages>
 
 		<random_seed type="int" units="dimensionless">0</random_seed> 
 
